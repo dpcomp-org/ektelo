@@ -137,3 +137,25 @@ To test a specific module (in this case, `TestExperiment`):
 ```bash
 nosetests test.unit.test_data:TestData
 ```
+
+## Spark
+
+### Installing Scala and Spark on OSX
+
+```bash
+brew upgrade && brew update
+brew install scala
+brew install apache-spark
+```
+
+### Additional Environment
+
+```bash
+export PYSPARK_DRIVER_PYTHON=ipython
+```
+
+## Launching pyspark
+
+```bash
+pyspark
+```

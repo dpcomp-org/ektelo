@@ -236,6 +236,14 @@ class Relation(Marshallable):
     def df(self):
         return self._df[[column for column in self.config]]
 
+    @staticmethod
+    def from_df(config, df):
+        relation = Relation(config)
+        relation._df = df
+        relation._apply_config()
+
+        return relation
+
     def load_csv(self, csv_filename, delimiter=','):
         self._df = pd.read_csv(csv_filename, sep=delimiter)
         self._apply_config()
