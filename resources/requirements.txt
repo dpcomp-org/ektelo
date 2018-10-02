@@ -7,3 +7,4 @@ pandas==0.19.1
 psycopg2==2.6.1
 PyYAML==3.12
 scipy==0.18
+crlibm==1.0.3
