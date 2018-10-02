@@ -33,12 +33,6 @@ def Lambda_round(x, Lam):
         return Lam * np.ceil(x / Lam)
 
 
-def get_B(lm, eps):
-    mult = 2**-49
-
-    return 1 / float(lm) * (1 - lm*eps)
-
-
 def snap_laplace(f, lm, sensitivity=1, B=None):
     if B is None:
         B = 2e20 * lm
