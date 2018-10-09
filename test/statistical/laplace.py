@@ -1,4 +1,6 @@
 from ektelo import private_laplace as pl
+import math
+import random
 from scipy import stats
 import unittest
 
@@ -13,8 +15,6 @@ class TestLaplace(unittest.TestCase):
 
         xs = []
         ys = []
-        import math
-        import random
         for i in range(1000):
             r = 1e-52 + i
             xs.append(pl.snap_laplace(1, lm, r=r))
