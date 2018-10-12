@@ -30,5 +30,6 @@ domain = ektelo_spark.spark_domain(config, projection)
 config = {field: info for field, info in config.items() if field in projection}
 cps_table = spark.sql('SELECT sex, income, race FROM cps WHERE sex = 1')
 cps_spark_relation = ektelo_spark.Relation(cps_table, schema, domain, 'cps')
+vec = cps_spark_relation.to_vector()
 cps_df = cps_spark_relation.to_pandas()
 cps_relation = ektelo_data.Relation.from_df(config, cps_df)

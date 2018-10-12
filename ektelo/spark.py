@@ -16,7 +16,10 @@ type_map = {'integer': IntegerType,
             'continuous': FloatType}
 
 
-def spark_domain(relation_config, projection):
+def spark_domain(relation_config, projection=None):
+    if projection is None:
+        projection = relation_config.keys()
+
     return [max(relation_config[field]['domain'])+1 for field in projection]
 
 
@@ -24,7 +27,10 @@ def spark_field(name, field_type):
     return StructField(name, field_type)
 
 
-def spark_schema(relation_config, projection):
+def spark_schema(relation_config, projection=None):
+    if projection is None:
+        projection = relation_config.keys()
+
     return StructType([spark_field(name, type_map[relation_config[name]['type']]()) for name in projection])
 
 

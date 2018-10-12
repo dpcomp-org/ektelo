@@ -8,3 +8,5 @@ psycopg2==2.6.1
 PyYAML==3.12
 scipy==0.18
 ipython==6.5.0
+pytest-spark==0.4.5
+pyspark==2.3.2

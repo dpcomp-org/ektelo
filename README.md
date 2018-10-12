@@ -154,8 +154,14 @@ brew install apache-spark
 export PYSPARK_DRIVER_PYTHON=ipython
 ```
 
-## Launching pyspark
+### Launching pyspark
 
 ```bash
 pyspark
+```
+
+### Testing
+
+```bash
+JAVA_HOME="$(/usr/libexec/java_home -v 1.8)" py.test test/system/test_spark_plans.py
 ```
