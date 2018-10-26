@@ -38,6 +38,7 @@ class Identity(Base):
 
         M = selection.Identity(x.shape).select()
         y = measurement.Laplace(M, eps).measure(x, prng)
+        y = y.to_array()
         x_hat = inference.LeastSquares().infer(M, y)
 
         return x_hat
