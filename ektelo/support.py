@@ -1,7 +1,7 @@
 from __future__ import division
 from builtins import zip
 from ektelo import util
-from ektelo.matrix import EkteloMatrix
+from ektelo.matrix import EkteloMatrix, EkteloVector
 from functools import reduce
 import math
 import numpy as np
@@ -126,7 +126,7 @@ def canonical_ordering(mapping):
     u = np.array( [u for (u,i) in tups] )
     mapping = u[inverse].reshape(mapping.shape)
 
-    return mapping
+    return EkteloVector(mapping)
 
 
 def mapping_statistics(mapping):

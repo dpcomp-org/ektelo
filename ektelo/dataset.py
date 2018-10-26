@@ -10,6 +10,7 @@ from ektelo.data import Histogram
 from ektelo import util
 from ektelo.mixins import CartesianInstantiable
 from ektelo.mixins import Marshallable
+from ektelo.matrix import EkteloVector
 import scipy.stats as sci
 from functools import reduce
 
@@ -79,7 +80,7 @@ class Dataset(Marshallable):
                 self._dist = self.reduce_data(p_grid,self._dist)  # update dist
 
         self._compiled = True
-        self._payload = self._payload.astype("int") # partition engines need payload to be of type int
+        self._payload = EkteloVector(self._payload.astype("int")) # partition engines need payload to be of type int
 
         return self
 
