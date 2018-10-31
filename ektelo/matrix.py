@@ -325,6 +325,47 @@ class Kronecker(EkteloMatrix):
     def __abs__(self):
         return Kronecker([Q.__abs__() for Q in self.matrices]) 
 
+class Project(Kronecker):
+    """
+    A projection matrix is a linear transformation that projects the data down to a 
+    smaller domain specified by axes.  Can also think of it as marginalizing out
+    those axes not in the projection.
+    """
+    def __init__(self, domain, axes, dtype=np.float64):
+        """
+        :param domain: the domain of the multi-dimensional data
+        :param axes: the axes to project down to, ust be a subset of range(d)
+        """
+        self._domain = domain
+        self._axes = axes
+        subs = [Ones(1, n) for n in domain]
+        for ax in axes:
+            subs[ax] = Identity(domain[ax])
+        Kronecker.__init__(self, subs) 
+
+class SwapAxes(EkteloMatrix):
+    """
+    Represents a permutation matrix, that is analogous to swapping the 
+    axes of a multi-dimensional array over the flattened domain
+    """
+    def __init__(self, domain, axes, dtype=np.float64):
+        """
+        :param domain: the domain of the multi-dimensional data
+        :param axes: the re-ordered axes, must be a permuation of range(d)
+            see numpy.transpose for details
+        """
+        self._domain = domain
+        self._axes = axes
+        self._swap = list(self._axes) + [len(self._axes)]
+        n = np.prod(domain)
+        self.shape = (n, n)
+        self.dtype = dtype
+
+    def _matmat(self, V):
+        n = np.prod(self._domain)
+        return V.reshape(*self._domain, -1).transpose(self._swap).reshape(n, -1)
+        
+
 class _LazyProduct(EkteloMatrix):
     def __init__(self, A, B):
         assert A.shape[1] == B.shape[0]
