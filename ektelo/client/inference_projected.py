@@ -3,6 +3,7 @@ from ektelo import matrix
 from scipy import sparse
 from ektelo.client.inference import multWeightsFast
 from collections import OrderedDict
+from functools import reduce
 
 class Domain:
     def __init__(self, attrs, shape):
@@ -52,9 +53,30 @@ def projection_matrix(domain, proj):
     return matrix.Kronecker(subs)
         
 
+class ContingencyTable:
+    def __init__(self, counts, domain):
+        '''
+        :param counts: ND histogram
+        :parm domain: domain of the histogram
+        '''
+        self.counts = counts
+        self.domain = domain
+        
+    def project(self, cols):
+
+        project_attrs = set(self.domain.attrs) -  set(cols)
+        ax = tuple([self.domain.attrs.index(att) for att in project_attrs])
+        domain = self.domain.project(cols)
+        counts = self.counts.sum(axis=ax)
+        return ContingencyTable(counts, domain)
+        
+    def datavector(self):
+        return self.counts.flatten()
+    
+
 class ProductDist:
     """ factored representation of data from MWEM paper """
-    def __init__(self, factors, domain, total):
+    def __init__(self, factors, domain):
         """
         :param factors: a list of contingency tables, 
                 defined over disjoint subsets of attributes
@@ -63,26 +85,29 @@ class ProductDist:
         """
         self.factors = factors
         self.domain = domain
-        self.total = total
 
     def project(self, cols):
         domain = self.domain.project(cols)
         factors = []
         for factor in self.factors:
-            pcol = [c for c in cols if c in factor.domain.attr]
+            pcol = [c for c in cols if c in factor.domain.attrs]
             if pcol != []:
                 factors.append(factor.project(pcol))
-        return ProductDist(factors, domain, self.total)
+        return ProductDist(factors, domain)
 
     def datavector(self):
         domain = self.domain
         factors = []
         for factor in self.factors:
-            shape = factor.domain.shape(domain.attr)
+            shape = []
+            for att in domain.attrs:
+                try:
+                    shape.append(factor.domain.size(att))
+                except:
+                    shape.append(1)
             factors.append(factor.counts.reshape(shape))
         # np.prod only works correctly if len(factors) >= 2
         return reduce(lambda x,y: x*y, factors, 1.0)
-
 """
 This class is designed to do inference from measurements taken over different projections
 of the data.  
