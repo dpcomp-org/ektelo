@@ -2,25 +2,24 @@ from ektelo import workload, matrix, dataset_experimental
 import pandas as pd
 import numpy as np
 from ektelo.private import measurement
+from ektelo.client.inference_projected import FactoredMultiplicativeWeights
 
 def synthetic(cols, dom, N = 1000000):
+    domain = dataset_experimental.Domain(cols, dom)
     arr = np.zeros((N, len(cols)), dtype=int)
     for i, n in enumerate(dom):
         arr[:,i] = np.random.randint(0, n, N)
-    return pd.DataFrame(arr, columns=cols)
+    df = pd.DataFrame(arr, columns=cols)
+    return dataset_experimental.Tabular(df, domain)
     
-def inference(measurements):
-    # consume measurements over different projections
-    # return an estimate of the data vector in factored form (as a ProductDist)
-    pass 
-
 def factored_example():
     prng = np.random.RandomState(seed=0)
     cols = ['a','b','c', 'd', 'e', 'f', 'g']
     # domain is far too large to fit data vector in memory (or on spark)
-    dom = (128, 2, 10, 1024, 1024, 1024 1024)
+    dom = (128, 2, 10, 1024, 1024, 1024, 1024)
     # create the data, in tabular form
-    data = synthetic(cols, dom)
+    total = 1000000
+    data = synthetic(cols, dom, N = total)
 
     # Workload needs to make projections explicit
     W = { 'a'       : workload.Prefix(128), 
@@ -33,7 +32,7 @@ def factored_example():
     
     measurement_cache = []
     
-    a = data.project('a').toarray()
+    a = data.project('a').datavector()
     # note we could run some complex sub-plan on a, but keep things simple here
     I = matrix.Identity(128)
     y = measurement.Laplace(I, 0.5).measure(a, prng)
@@ -41,16 +40,17 @@ def factored_example():
     # for proper inference need to store projection, queries, answers, and epsilon 
     # maybe we can create a class to store measurements, where projection and epsilon
     # are optional
-    measurement_cache.append( ('a', I, y, 0.5) )
+    measurement_cache.append( (I, y, 0.5, ('a',)) )
     
-    bc = data.project(('b', 'c')).toarray()
+    bc = data.project(('b', 'c')).datavector()
     I = matrix.Identity(20)
     y = measurement.Laplace(I, 0.5).measure(bc, prng)
 
-    measurement_cache.append( (('b','c'), I, y, 0.5) ) 
+    measurement_cache.append( (I, y, 0.5, ('b','c')) ) 
 
     # estimate the data in factored form
-    prod_dist = inference(measurement_cache)
+    infer_engine = FactoredMultiplicativeWeights(data.domain)
+    prod_dist = infer_engine.infer(measurement_cache, total)
 
     # answer the workload
     for key in W:
@@ -67,3 +67,6 @@ def factored_example():
     # - project down to a small domain, 
     # - convert to a vector
     # - use that vector normally
+
+if __name__ == '__main__':
+    factored_example()

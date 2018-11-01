@@ -143,7 +143,7 @@ class FactoredMultiplicativeWeights:
         ans = { }
 
         for group, proj in zip(groups, proj):
-            subdom = domain.project(proj)
+            subdom = self.domain.project(proj)
             n = np.prod(subdom.shape)
             M, y = projected_vstack(group, subdom)
             hatx = np.ones(n) * total / n
