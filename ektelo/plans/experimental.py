@@ -54,11 +54,11 @@ def factored_example():
 
     # answer the workload
     for key in W:
-        x = prod_dist.project(key).toarray()
+        x = prod_dist.project(key).datavector().flatten()
         ans = W[key].dot(x)
 
     # or answer some other new queries
-    ans = prod_dist.project(('a','c')).toarray()
+    ans = prod_dist.project(('a','c')).datavector().flatten()
 
    
     # note that the tabular data has the same interface as the estimated data,

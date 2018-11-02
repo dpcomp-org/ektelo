@@ -165,7 +165,7 @@ class FactoredMultiplicativeWeights:
     def infer(self, measurement_cache, total):
         groups, proj = _cluster(measurement_cache) # cluster measurements
         
-        ans = { }
+        factors = []
 
         for group, proj in zip(groups, proj):
             subdom = self.domain.project(proj)
@@ -173,8 +173,8 @@ class FactoredMultiplicativeWeights:
             M, y = projected_vstack(group, subdom)
             hatx = np.ones(n) * total / n
             hatx = multWeightsFast(hatx, M, y, updateRounds=100) / total
-            ans[proj] = hatx
-        return ans
+            factors.append(ContingencyTable(hatx.reshape(subdom.shape), subdom))
+        return ProductDist(factors, self.domain)
 
 if __name__ == '__main__':
     
