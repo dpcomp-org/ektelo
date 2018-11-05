@@ -10,7 +10,25 @@ import unittest
 class TestData(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.config = {
+            'age': {
+                'bins': 75,
+                'domain': [16,91]
+            },
+            'race': {
+                'bins': 3,
+                'domain': [1,4],
+                'value_map': {
+                    'Black': 1,
+                    'Other': 2,
+                    'White': 3
+                }
+            }
+        }
+        self.config = OrderedDict(sorted(self.config.items()))
+        self.df = pd.DataFrame(data={'age': [10, 50, 5, 75, 30],
+                                     'race': ['Black', 'White', 'Other', 'Black', 'White']}) 
+        self.relation = Relation(self.config, self.df)
 
     def test_graph(self):
         n1 = Node()
@@ -26,27 +44,7 @@ class TestData(unittest.TestCase):
                          sorted([(n1.id, n2.id), (n1.id, n3.id)]))
 
     def test_relation_meta_data(self):
-        config = {
-            'age': {
-                'bins': 75,
-                'domain': [16,91]
-            },
-            'race': {
-                'bins': 3,
-                'domain': [1,4],
-                'value_map': {
-                    'Black': 1,
-                    'Other': 2,
-                    'White': 3
-                }
-            }
-        }
-        config = OrderedDict(sorted(config.items()))
-        df = pd.DataFrame(data={'age': [10, 50, 5, 75, 30],
-                               'race': ['Black', 'White', 'Other', 'Black', 'White']}) 
-
-        relation = Relation(config, df)
-        self.assertEqual(relation.bins, [75, 3])
-        self.assertEqual(relation.domains, [[16,91], [1,4]])
-        self.assertEqual(sorted(relation.value_map[1].items()), 
+        self.assertEqual(self.relation.bins, [75, 3])
+        self.assertEqual(self.relation.domains, [[16,91], [1,4]])
+        self.assertEqual(sorted(self.relation.value_map[1].items()), 
                          [('Black', 1), ('Other', 2), ('White', 3)])
