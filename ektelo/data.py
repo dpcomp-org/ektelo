@@ -212,11 +212,11 @@ class Histogram(Marshallable):
 
 class Relation(Marshallable):
 
-    def __init__(self, config):
+    def __init__(self, config, df=None):
         self.init_params = util.init_params_from_locals(locals())
 
         self.config = config
-        self._df = None
+        self._df = df
         self.hist = None
         self.edges = None
 
