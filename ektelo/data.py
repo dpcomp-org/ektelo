@@ -220,6 +220,9 @@ class Relation(Marshallable):
         self.hist = None
         self.edges = None
 
+        if self._df is not None:
+            self._apply_config()
+
     @property
     def bins(self):
         return [self.config[column]['bins'] for column in self.config]

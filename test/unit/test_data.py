@@ -28,7 +28,7 @@ class TestData(unittest.TestCase):
         self.config = OrderedDict(sorted(self.config.items()))
         self.df = pd.DataFrame(data={'age': [10, 50, 5, 75, 30],
                                      'race': ['Black', 'White', 'Other', 'Black', 'White']}) 
-        self.relation = Relation(self.config, self.df)
+        self.relation = Relation(self.config, self.df.copy())
 
     def test_graph(self):
         n1 = Node()
@@ -48,3 +48,9 @@ class TestData(unittest.TestCase):
         self.assertEqual(self.relation.domains, [[16,91], [1,4]])
         self.assertEqual(sorted(self.relation.value_map[1].items()), 
                          [('Black', 1), ('Other', 2), ('White', 3)])
+
+    def test_relation_data(self):
+        self.assertListEqual(self.df['age'].values.tolist(), 
+                             self.relation.df['age'].values.tolist())
+        self.assertListEqual([1,3,2,1,3], 
+                             self.relation.df['race'].values.tolist())
