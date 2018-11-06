@@ -5,33 +5,6 @@ from ektelo.client.inference import multWeightsFast
 from collections import OrderedDict
 from functools import reduce
 
-class Domain:
-    def __init__(self, attrs, shape):
-        """ Construct a Domain object
-        
-        :param attrs: a list or tuple of attribute names
-        :param shape: a list or tuple of domain sizes for each attribute
-        """
-        self.attrs = attrs
-        self.shape = shape
-        self.config = OrderedDict(zip(attrs, shape))
-        
-    def project(self, attrs):
-        """ project the domain onto a subset of attributes
-        
-        :param attrs: the attributes to project onto
-        :return: the projected Domain object
-        """
-        # return the projected domain
-        shape = tuple(self.config[a] for a in attrs)
-        return Domain(attrs, shape)
-    
-    def size(self, col):
-        """ return the size of an individual attribute
-
-        :param col: the attribute 
-        """
-        return self.config[col]
     
 def projection_matrix(domain, proj):
     """ Construct the projection matrix P that projects a data vector from the
