@@ -1,22 +1,23 @@
 from ektelo import workload, matrix, dataset_experimental
 import pandas as pd
 import numpy as np
+from ektelo.data import Domain
 from ektelo.private import measurement
 from ektelo.client.inference_projected import FactoredMultiplicativeWeights
 
 def synthetic(cols, dom, N = 1000000):
-    domain = dataset_experimental.Domain(cols, dom)
     arr = np.zeros((N, len(cols)), dtype=int)
     for i, n in enumerate(dom):
         arr[:,i] = np.random.randint(0, n, N)
     df = pd.DataFrame(arr, columns=cols)
-    return dataset_experimental.Tabular(df, domain)
+    config = {field: {'bins': bins} for field, bins in zip(cols, dom)}
+    return dataset_experimental.Tabular(df, Domain(config))
     
 def factored_example():
     prng = np.random.RandomState(seed=0)
     cols = ['a','b','c', 'd', 'e', 'f', 'g']
-    # domain is far too large to fit data vector in memory (or on spark)
     dom = (128, 2, 10, 1024, 1024, 1024, 1024)
+    # domain is far too large to fit data vector in memory (or on spark)
     # create the data, in tabular form
     total = 1000000
     data = synthetic(cols, dom, N = total)

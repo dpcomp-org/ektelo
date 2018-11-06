@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from builtins import object
 from ektelo import util
 from ektelo.data import DataManager
+from ektelo.data import Domain
 from ektelo.data import Relation
 from ektelo.data import Graph
 from ektelo.data import Node
@@ -94,7 +95,7 @@ class PrivateManager(object):
 
     def _load_data(self, source_uri):
         if self._data is None:
-            self._data = Relation(self.data_config).load_csv(self.source_uri, self.file_delimiter)
+            self._data = Relation(Domain(self.data_config)).load_csv(self.source_uri, self.file_delimiter)
     
         return self._data
 

@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from ektelo.data import Domain
 from ektelo.data import Graph
 from ektelo.data import Node
 from ektelo.data import Relation
@@ -13,7 +14,8 @@ class TestData(unittest.TestCase):
         self.config = {
             'age': {
                 'bins': 75,
-                'domain': [16,91]
+                'domain': [16,91],
+                'type': 'discrete'
             },
             'race': {
                 'bins': 3,
@@ -22,13 +24,14 @@ class TestData(unittest.TestCase):
                     'Black': 1,
                     'Other': 2,
                     'White': 3
-                }
+                },
+                'type': 'ordinal'
             }
         }
         self.config = OrderedDict(sorted(self.config.items()))
         self.df = pd.DataFrame(data={'age': [10, 50, 5, 75, 30],
                                      'race': ['Black', 'White', 'Other', 'Black', 'White']}) 
-        self.relation = Relation(self.config, self.df.copy())
+        self.relation = Relation(Domain(self.config), self.df.copy())
 
     def test_graph(self):
         n1 = Node()

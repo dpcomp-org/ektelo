@@ -155,7 +155,7 @@ class PrivBayesSelect(SelectionOperator):
 
     @staticmethod
     def get_config_str(relation):
-        config = relation.config
+        config = relation.domain
         config_str = ''
 
         for column in config:

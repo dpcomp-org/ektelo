@@ -173,7 +173,7 @@ class RelationHelper(object):
         self.config = OrderedDict(sorted(all_configs[config_name].items()))
 
     def load(self):
-        return Relation(self.config).load_csv(self.filename, self.delimiter)
+        return Relation(Domain(self.config)).load_csv(self.filename, self.delimiter)
 
 
 class Histogram(Marshallable):
@@ -210,38 +210,85 @@ class Histogram(Marshallable):
         return hist_data
 
 
-class Relation(Marshallable):
+class Domain(Marshallable):
+    def __init__(self, config):
+        """ Construct a Domain object
 
-    def __init__(self, config, df=None):
+        :param attrs: a list or tuple of attribute names
+        :param shape: a list or tuple of domain sizes for each attribute
+        """
         self.init_params = util.init_params_from_locals(locals())
 
-        self.config = config
+        self.config = copy.deepcopy(config)
+        self.attrs = list(self.config.keys())
+        self.shape = [self.config[attr]['bins'] for attr in self.attrs]
+
+    def project(self, attrs):
+        """ project the domain onto a subset of attributes
+
+        :param attrs: the attributes to project onto
+        :return: the projected Domain object
+        """
+        config = {attr: self.config[attr] for attr in attrs}
+
+        return Domain(config)
+
+    def size(self, col):
+        """ return the size of an individual attribute
+        :param col: the attribute
+        """
+        return self.config[col]['bins']
+
+    def __getitem__(self, key):
+        return self.config[key]
+
+    def __iter__(self):
+        self._it = 0
+        
+        return self
+
+    def __next__(self):
+        if self._it == len(self.attrs):
+            raise StopIteration
+        
+        result = self.attrs[self._it]
+        self._it += 1
+
+        return result
+
+
+class Relation(Marshallable):
+
+    def __init__(self, domain, df=None):
+        self.init_params = util.init_params_from_locals(locals())
+
+        self.domain = domain
         self._df = df
         self.hist = None
         self.edges = None
 
         if self._df is not None:
-            self._apply_config()
+            self._apply_domain()
 
     @property
     def bins(self):
-        return [self.config[column]['bins'] for column in self.config]
+        return [self.domain[column]['bins'] for column in self.domain]
 
     @property
     def domains(self):
-        return [self.config[column]['domain'] for column in self.config]
+        return [self.domain[column]['domain'] for column in self.domain]
 
     @property
     def value_map(self):
-        return [(self.config[column]['value_map'] if 'value_map' in self.config[column] else None) for column in self.config]
+        return [(self.domain[column]['value_map'] if 'value_map' in self.domain[column] else None) for column in self.domain]
 
     @property
     def df(self):
-        return self._df[[column for column in self.config]]
+        return self._df[[column for column in self.domain]]
 
     def load_csv(self, csv_filename, delimiter=','):
         self._df = pd.read_csv(csv_filename, sep=delimiter)
-        self._apply_config()
+        self._apply_domain()
 
         return self
 
@@ -249,36 +296,35 @@ class Relation(Marshallable):
         assert self._df is not None, 'no data to filter'
 
         self._df = self._df.query(query)
-        self._apply_config()
+        self._apply_domain()
 
         return self
 
     def project(self, fields):
-        all_fields = set(self.config.keys())
+        all_fields = set(self.domain.attrs)
 
-        assert all_fields.issuperset(set(fields)), 'supplied fields are not subset of config fields'
+        assert all_fields.issuperset(set(fields)), 'supplied fields are not subset of relation fields'
 
         self._df = self._df[fields]
-        config_pairs = [(key, value) for key, value in self.config.items() if key in fields]
-        self.config = OrderedDict(config_pairs)
-        self._apply_config()
+        self.domain = self.domain.project(fields)
+        self._apply_domain()
 
         return self
 
     def clone(self):
         return copy.deepcopy(self)
 
-    def _apply_config(self):
+    def _apply_domain(self):
         # swap categorical for numerical values
         for column in self._df.columns:
-            if column in self.config and 'value_map' in self.config[column]:
-                for source, target in list(self.config[column]['value_map'].items()):
+            if column in self.domain and 'value_map' in self.domain[column]:
+                for source, target in list(self.domain[column]['value_map'].items()):
                     self._df.replace({column: {source: target}}, inplace=True)
 
         # infer active domains
-        for column in self.config:
-            if self.config[column]['domain'] == 'active':
-                self.config[column]['domain'] = (self._df[column].min(), self._df[column].max())
+        for column in self.domain:
+            if self.domain[column]['domain'] == 'active':
+                self.domain[column]['domain'] = (self._df[column].min(), self._df[column].max())
  
         return self
 
@@ -286,7 +332,7 @@ class Relation(Marshallable):
         assert self._df is not None
 
         relation_data = {}
-        relation_data['avgs'] = [self._df[column].mean() for column in self.config]
+        relation_data['avgs'] = [self._df[column].mean() for column in self.domain]
         relation_data['value_map'] = self.value_map
 
         return relation_data

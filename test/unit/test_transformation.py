@@ -49,7 +49,7 @@ class TestTransformation(unittest.TestCase):
         project = Project(['income'])
         X = project.transform(self.relation)
 
-        np.testing.assert_array_equal(X.domains, [X.config['income']['domain']])
+        np.testing.assert_array_equal(X.domains, [X.domain['income']['domain']])
 
     def test_group_operator(self):
         group = Group(self.idxs)        

@@ -6,6 +6,7 @@ from builtins import range
 import hashlib
 import os
 import numpy
+from ektelo.data import Domain
 from ektelo.data import Histogram
 from ektelo import util
 from ektelo.mixins import CartesianInstantiable
@@ -158,7 +159,7 @@ class DatasetFromRelation(Dataset, CartesianInstantiable):
 
     @staticmethod
     def instantiate(params):
-        relation = data.Relation(params['config']).load_csv(params['csv_filename'], params['csv_delimiter'])
+        relation = data.Relation(Domain(params['config'])).load_csv(params['csv_filename'], params['csv_delimiter'])
 
         return DatasetFromRelation(relation, params['nickname'], params['normed'], params['weights'], params['domain'])
 
