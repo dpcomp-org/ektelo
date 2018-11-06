@@ -305,11 +305,17 @@ class Relation(Marshallable):
 
         assert all_fields.issuperset(set(fields)), 'supplied fields are not subset of relation fields'
 
-        self._df = self._df[fields]
-        self.domain = self.domain.project(fields)
-        self._apply_domain()
+        df = self._df[fields]
+        domain = self.domain.project(fields)
 
-        return self
+        return Relation(domain, df)
+
+    def datavector(self):
+        """ return the database in vector-of-counts form """
+        vals = self.df.values
+        bins = [range(n+1) for n in self.domain.shape]
+        counts = np.histogramdd(vals, bins)[0]
+        return counts.flatten()
 
     def clone(self):
         return copy.deepcopy(self)

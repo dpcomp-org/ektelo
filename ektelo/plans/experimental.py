@@ -1,7 +1,8 @@
-from ektelo import workload, matrix, dataset_experimental
+from ektelo import workload, matrix
 import pandas as pd
 import numpy as np
 from ektelo.data import Domain
+from ektelo.data import Relation
 from ektelo.private import measurement
 from ektelo.client.inference_projected import FactoredMultiplicativeWeights
 
@@ -10,8 +11,8 @@ def synthetic(cols, dom, N = 1000000):
     for i, n in enumerate(dom):
         arr[:,i] = np.random.randint(0, n, N)
     df = pd.DataFrame(arr, columns=cols)
-    config = {field: {'bins': bins} for field, bins in zip(cols, dom)}
-    return dataset_experimental.Tabular(df, Domain(config))
+    config = {field: {'bins': bins, 'domain': (0, bins)} for field, bins in zip(cols, dom)}
+    return Relation(Domain(config), df)
     
 def factored_example():
     prng = np.random.RandomState(seed=0)
@@ -33,7 +34,7 @@ def factored_example():
     
     measurement_cache = []
     
-    a = data.project('a').datavector()
+    a = data.project(['a']).datavector()
     # note we could run some complex sub-plan on a, but keep things simple here
     I = matrix.Identity(128)
     y = measurement.Laplace(I, 0.5).measure(a, prng)
@@ -43,7 +44,7 @@ def factored_example():
     # are optional
     measurement_cache.append( (I, y, 0.5, ('a',)) )
     
-    bc = data.project(('b', 'c')).datavector()
+    bc = data.project(['b', 'c']).datavector()
     I = matrix.Identity(20)
     y = measurement.Laplace(I, 0.5).measure(bc, prng)
 
@@ -59,7 +60,7 @@ def factored_example():
         ans = W[key].dot(x)
 
     # or answer some other new queries
-    ans = prod_dist.project(('a','c')).datavector().flatten()
+    ans = prod_dist.project(['a','c']).datavector().flatten()
 
    
     # note that the tabular data has the same interface as the estimated data,
