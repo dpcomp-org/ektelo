@@ -9,6 +9,7 @@ import numpy as np
 from past.builtins import str as old_str
 from past.builtins import unicode
 import past.utils
+import pandas as pd
 import sys
 
 PRIMITIVES = (int, float, str, bool, int, str, type(None))
@@ -110,6 +111,8 @@ def prepare_for_json(item):
         return prepare_for_json(item.inspect())
     elif type(item) == np.ndarray:
         return {'ndarray': item.tolist(), 'shape': item.shape}
+    elif type(item) == pd.DataFrame:
+        return {'pandas.dataframe': item.to_json()}
     elif type(item) == list or type(item) == tuple:
         replacement = []
 
@@ -140,6 +143,8 @@ def receive_from_json(item):
     """
     if type(item) in PRIMITIVES:
         return item
+    elif type(item) == dict and 'pandas.dataframe' in item:
+        return pd.read_json(item['pandas.dataframe'])
     elif type(item) == dict and 'ndarray' in item and 'shape' in item:
         return np.array(item['ndarray']).reshape(item['shape'])
     elif type(item) == dict and 'marshaled' in item:

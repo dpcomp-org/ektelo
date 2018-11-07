@@ -3,6 +3,7 @@ from ektelo import util
 from ektelo.algorithm import ahp
 import json
 import numpy as np
+import pandas as pd
 import unittest
 
 
@@ -40,6 +41,12 @@ class TestUtil(unittest.TestCase):
                          util.standardize(serde((3,2))))
         self.assertEqual(['a', 'b'], serde(['a', 'b']))
         self.assertEqual(None, serde(None))
+
+        array = np.array([1,2,3])
+        np.testing.assert_array_equal(array, serde(array))
+
+        df = pd.DataFrame(data=[1,2,3])
+        pd.testing.assert_frame_equal(df, serde(df))
 
     def test_json_numpy_array(self):
         self.assertEqual(util.standardize(np.ones((3,2))), 
