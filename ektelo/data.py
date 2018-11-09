@@ -232,6 +232,11 @@ class Domain(Marshallable):
         :param attrs: the attributes to project onto
         :return: the projected Domain object
         """
+        if type(attrs) == str:
+            attrs = [attrs]
+        elif type(attrs) == tuple:
+            attrs = list(attrs)
+
         config = {attr: self.config[attr] for attr in attrs}
 
         return Domain(config)
@@ -304,6 +309,11 @@ class Relation(Marshallable):
         return self
 
     def project(self, fields):
+        if type(fields) == str:
+            fields = [fields]
+        elif type(fields) == tuple:
+            fields = list(fields)
+
         all_fields = set(self.domain.attrs)
 
         assert all_fields.issuperset(set(fields)), 'supplied fields are not subset of relation fields'

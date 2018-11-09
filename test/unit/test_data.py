@@ -31,7 +31,8 @@ class TestData(unittest.TestCase):
         self.config = OrderedDict(sorted(self.config.items()))
         self.df = pd.DataFrame(data={'age': [10, 50, 5, 75, 30],
                                      'race': ['Black', 'White', 'Other', 'Black', 'White']}) 
-        self.relation = Relation(Domain(self.config), self.df.copy())
+        self.domain = Domain(self.config)
+        self.relation = Relation(self.domain, self.df.copy())
 
     def test_graph(self):
         n1 = Node()
@@ -57,3 +58,13 @@ class TestData(unittest.TestCase):
                              self.relation.df['age'].values.tolist())
         self.assertListEqual([1,3,2,1,3], 
                              self.relation.df['race'].values.tolist())
+
+    def test_domain_projection(self):
+        self.assertTrue(isinstance(self.domain.project('age'), Domain))
+        self.assertTrue(isinstance(self.domain.project(['age']), Domain))
+        self.assertTrue(isinstance(self.domain.project(('age',)), Domain))
+
+    def test_relation_projection(self):
+        self.assertTrue(isinstance(self.relation.project('age'), Relation))
+        self.assertTrue(isinstance(self.relation.project(['age']), Relation))
+        self.assertTrue(isinstance(self.relation.project(('age',)), Relation))
