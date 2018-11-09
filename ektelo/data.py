@@ -156,13 +156,16 @@ class RelationHelper(object):
 
     resource_csv_map = {'CPS': 'cps.csv',
                         'STROKE_1D': 'stroke.csv',
-                        'STROKE_2D': 'stroke.csv'}
+                        'STROKE_2D': 'stroke.csv',
+                        'ADULT': 'adult.csv'}
     resource_config_file_map = {'CPS': 'cps.yml',
                                 'STROKE_1D': 'stroke.yml',
-                                'STROKE_2D': 'stroke.yml'}
+                                'STROKE_2D': 'stroke.yml',
+                                'ADULT': 'adult.yml'}
     resource_config_name_map = {'CPS': 'cps_config',
                                 'STROKE_1D': 'stroke_1D_config',
-                                'STROKE_2D': 'stroke_2D_config'}
+                                'STROKE_2D': 'stroke_2D_config',
+                                'ADULT': 'adult_config'}
 
     def __init__(self, resource, delimiter=','):
         self.delimiter = delimiter

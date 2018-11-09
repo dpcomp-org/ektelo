@@ -106,6 +106,7 @@ The data must be downloaded into the `$EKTELO_DATA` folder.
 mkdir -p $EKTELO_DATA
 curl https://www.dpcomp.org/data/cps.csv > $EKTELO_DATA/cps.csv
 curl https://www.dpcomp.org/data/stroke.csv > $EKTELO_DATA/stroke.csv
+curl https://www.dpcomp.org/data/adult.csv > $EKTELO_DATA/adult.csv
 ```
 
 Finally, after instantiating the virtualenv, compile the C libraries as follows.
