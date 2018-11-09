@@ -15,13 +15,17 @@ class TestPlans(unittest.TestCase):
     seed = 10
     relation_cps = RelationHelper('CPS').load()
     relation_stroke = RelationHelper('STROKE_2D').load()
+    relation_adult = RelationHelper('ADULT').load()
     cps_domain = (10, 2, 7, 2, 2)
     stroke_domain = (64, 64)
+    adult_domain = (2, 2, 2, 2, 2, 2, 2, 7, 3, 3, 5, 3, 2, 9)
     x_cps = transformation.Vectorize('CPS', reduced_domain=cps_domain).transform(relation_cps)
     x_cps_scale = x_cps.sum()
     x_stroke = transformation.Vectorize('STROKE', reduced_domain=stroke_domain).transform(relation_stroke)
+    x_adult = transformation.Vectorize('ADULT', reduced_domain=adult_domain).transform(relation_adult)
     W_cps = workload.RandomRange(None, len(x_cps), 25)
     W_stroke = workload.RandomRange(None, len(x_stroke), 25)
+    W_adult = workload.RandomRange(None, len(x_adult), 25)
 
     def setUp(self):
         self.eps = 0.1
@@ -32,6 +36,13 @@ class TestPlans(unittest.TestCase):
                                           self.eps,
                                           self.seed)
         self.W_cps.dot(x_hat)
+
+    def test_identity_adult(self):
+        x_hat = standalone.Identity().Run(self.W_adult,
+                                          self.x_adult,
+                                          self.eps,
+                                          self.seed)
+        self.W_adult.dot(x_hat)
 
     def test_privelet(self):
         x_hat = standalone.Privelet().Run(self.W_cps,
