@@ -24,7 +24,6 @@ def projection_matrix(domain, proj):
             subs.append(matrix.Ones(1,n))
     
     return matrix.Kronecker(subs)
-        
 
 class ContingencyTable:
     def __init__(self, counts, domain):
@@ -49,7 +48,7 @@ class ContingencyTable:
 
 class ProductDist:
     """ factored representation of data from MWEM paper """
-    def __init__(self, factors, domain):
+    def __init__(self, factors, domain, total):
         """
         :param factors: a list of contingency tables, 
                 defined over disjoint subsets of attributes
@@ -58,6 +57,13 @@ class ProductDist:
         """
         self.factors = factors
         self.domain = domain
+        self.total = total
+
+        for a in domain.attrs:
+            if not any(a in f.domain.attrs for f in factors):
+                sub = domain.project(a)
+                x = np.ones(sub.shape) / sub.shape[0]
+                factors.append(ContingencyTable(x, sub))
 
     def project(self, cols):
         domain = self.domain.project(cols)
@@ -66,7 +72,7 @@ class ProductDist:
             pcol = [c for c in cols if c in factor.domain.attrs]
             if pcol != []:
                 factors.append(factor.project(pcol))
-        return ProductDist(factors, domain)
+        return ProductDist(factors, domain, self.total)
 
     def datavector(self):
         domain = self.domain
@@ -80,7 +86,7 @@ class ProductDist:
                     shape.append(1)
             factors.append(factor.counts.reshape(shape))
         # np.prod only works correctly if len(factors) >= 2
-        return reduce(lambda x,y: x*y, factors, 1.0)
+        return reduce(lambda x,y: x*y, factors, 1.0) * self.total
 """
 This class is designed to do inference from measurements taken over different projections
 of the data.  
@@ -147,7 +153,7 @@ class FactoredMultiplicativeWeights:
             hatx = np.ones(n) * total / n
             hatx = multWeightsFast(hatx, M, y, updateRounds=100) / total
             factors.append(ContingencyTable(hatx.reshape(subdom.shape), subdom))
-        return ProductDist(factors, self.domain)
+        return ProductDist(factors, self.domain, total)
 
 if __name__ == '__main__':
     

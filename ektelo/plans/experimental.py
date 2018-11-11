@@ -61,7 +61,8 @@ def factored_example():
 
     # or answer some other new queries
     ans = prod_dist.project(['a','c']).datavector().flatten()
-
+    
+    from IPython import embed; embed()
    
     # note that the tabular data has the same interface as the estimated data,
     # even though the underlying representation is totally different
