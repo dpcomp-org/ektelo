@@ -17,7 +17,7 @@
 adult_config:
     age: 
         type: discrete
-        bins: 2
+        bins: 101
         domain: [0,100]
     workclass: 
         type: categorical
@@ -35,11 +35,11 @@ adult_config:
             ?: 8
     fnlwgt: 
         type: discrete
-        bins: 2
+        bins: 100
         domain: [10000, 1500000]
     education: 
         type: categorical
-        bins: 2
+        bins: 16
         domain: [0,15]
         value_map:
             Bachelors: 0 
@@ -60,11 +60,11 @@ adult_config:
             Preschool: 15
     education-num: 
         type: discrete
-        bins: 2
+        bins: 16
         domain: [1,16]
     marital-status: 
         type: categorical
-        bins: 7
+        bins: 8
         domain: [0,7]
         value_map:
             Married-civ-spouse: 0
@@ -76,7 +76,7 @@ adult_config:
             Married-AF-spouse: 6
     occupation: 
         type: categorical
-        bins: 3
+        bins: 15
         domain: [0,14]
         value_map:
             Tech-support: 0 
@@ -96,7 +96,7 @@ adult_config:
             ?: 14
     relationship: 
         type: categorical
-        bins: 3
+        bins: 6
         domain: [0,5]
         value_map:
             Wife: 0
@@ -123,20 +123,20 @@ adult_config:
             Female: 0
             Male: 1
     capital-gain:
-        bins: 2
+        bins: 100
         domain: [0,100000]
         type: discrete
     capital-loss:
         type: discrete
-        bins: 2
+        bins: 100
         domain: [0,5000]
     hours-per-week:
         type: discrete
-        bins: 2
+        bins: 99
         domain: [1,99]
     native-country:
         type: categorical
-        bins: 3
+        bins: 42
         domain: [0,41]
         value_map:
             United-States: 0 

@@ -275,8 +275,8 @@ class Relation(Marshallable):
         self.hist = None
         self.edges = None
 
-        if self._df is not None:
-            self._apply_domain()
+        #if self._df is not None:
+         #   self._apply_domain()
 
     @property
     def bins(self):
@@ -292,11 +292,13 @@ class Relation(Marshallable):
 
     @property
     def df(self):
-        return self._df[[column for column in self.domain]]
+        
+        mapping = { col : self.domain[col]['value_map'] for col in self.domain.attrs if 'value_map' in self.domain[col] }
+        return self._df.replace(mapping)[self.domain.attrs]
 
     def load_csv(self, csv_filename, delimiter=','):
         self._df = pd.read_csv(csv_filename, sep=delimiter)
-        self._apply_domain()
+        #self._apply_domain()
 
         return self
 
@@ -337,8 +339,10 @@ class Relation(Marshallable):
         # swap categorical for numerical values
         for column in self._df.columns:
             if column in self.domain and 'value_map' in self.domain[column]:
-                for source, target in list(self.domain[column]['value_map'].items()):
-                    self._df.replace({column: {source: target}}, inplace=True)
+                mapping = self.domain[column]['value_map']
+                self._df.replace(mapping, inplace=True)
+                #for source, target in list(self.domain[column]['value_map'].items()):
+                #    self._df.replace({column: {source: target}}, inplace=True)
 
         # infer active domains
         for column in self.domain:
