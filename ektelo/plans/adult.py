@@ -6,6 +6,7 @@ from ektelo.data import Relation, RelationHelper
 from ektelo.private import measurement
 from ektelo.client import selection, inference_projected
 from IPython import embed
+import time
     
 if __name__ == '__main__':
     prng = np.random.RandomState(seed=0)
@@ -47,9 +48,12 @@ if __name__ == '__main__':
     y = measurement.Laplace(ident, 0.25).measure(x, prng)
     measurement_cache.append( (ident, y, 1.0, agehours.domain) )
     
+    t0 = time.time()
     # total domain = 10000^3 = 10^12
     engine = inference_projected.FactoredMultiplicativeWeights(data.domain)
     est = engine.infer(measurement_cache, total)
+    t1 = time.time()
+    print('%.2f seconds' % (t1-t0))
     
     # inference is done, now we can answer new questions over the original data
     
