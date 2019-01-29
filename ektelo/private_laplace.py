@@ -15,10 +15,10 @@ def clamp(x, B):
 
 
 def select_ulp_random():
-    exp = geom.rvs(0.5) - 1
+    exp = geom.rvs(0.5)
     sig = float('0.'+str(int(''.join(random.choices(('0','1'), k=52)), 2))) 
 
-    return sig * 10**(-exp)
+    return sig * 10**(exp)
 
 
 def Lambda(lm):
