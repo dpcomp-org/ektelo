@@ -236,7 +236,7 @@ class Marginal(Kronecker):
 
 class Marginals(VStack):
     def __init__(self, domain, weights):
-        self.domain = domain
+        self.domain = tuple(domain)
         self.weights = weights
         subs = []
         for key, wgt in enumerate(weights):
@@ -280,7 +280,7 @@ class Marginals(VStack):
 
 class MarginalsGram(Sum):
     def __init__(self, domain, weights):
-        self.domain = domain
+        self.domain = tuple(domain)
         self.weights = weights
         subs = []
         n, d = np.prod(domain), len(domain)
