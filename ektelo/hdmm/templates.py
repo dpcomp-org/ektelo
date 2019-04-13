@@ -374,7 +374,7 @@ class YuanConvex(TemplateStrategy):
             if np.abs((flast - fcurr) / flast) < accuracy:
                 break
 
-        self.ans = np.linalg.cholesky(X)
+        self.ans = np.linalg.cholesky(X).T
 
     def strategy(self):
         return matrix.EkteloMatrix(self.ans)
