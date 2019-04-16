@@ -112,7 +112,7 @@ class AllRange(EkteloMatrix):
         X = np.outer(r, r[::-1])
         return EkteloMatrix(np.minimum(X, X.T))
 
-class RangeQueries(matrix._LazyProduct):
+class RangeQueries(matrix.Product):
     """
     This class can represent a workload of range queries, which are provided as input
     to the constructor.
@@ -162,7 +162,7 @@ class RangeQueries(matrix._LazyProduct):
 
         P = Kronecker([Prefix(n, dtype) for n in domain])
         T = EkteloMatrix(self._transformer)
-        matrix._LazyProduct.__init__(self, T, P)
+        matrix.Product.__init__(self, T, P)
 
     @staticmethod
     def fromlist(domain, ranges, dtype=np.float64):
@@ -236,7 +236,7 @@ class Marginal(Kronecker):
 
 class Marginals(VStack):
     def __init__(self, domain, weights):
-        self.domain = domain
+        self.domain = tuple(domain)
         self.weights = weights
         subs = []
         for key, wgt in enumerate(weights):
@@ -280,7 +280,7 @@ class Marginals(VStack):
 
 class MarginalsGram(Sum):
     def __init__(self, domain, weights):
-        self.domain = domain
+        self.domain = tuple(domain)
         self.weights = weights
         subs = []
         n, d = np.prod(domain), len(domain)
@@ -312,8 +312,6 @@ class MarginalsGram(Sum):
             mask[uniq] = np.arange(step)
             rev = mask[A&b]
             values[start:start+step] = np.bincount(rev, vect*mult[A|b], step)
-            if values[start+step-1] == 0:
-                values[start+step-1] = 1.0 # hack to make solve triangular work
             cols[start:start+step] = b
             rows[start:start+step] = uniq
             start += step
@@ -323,11 +321,6 @@ class MarginalsGram(Sum):
 
     def __mul__(self, other):
         if isinstance(other, MarginalsGram) and self.domain == other.domain:
-            X, XT = self._Xmatrix(self.weights)
-            vect = X.dot(other.weights)
-            return MarginalsGram(self.domain, vect)
-        elif isinstance(other, Sum):
-            other = MarginalsGram.approximate(other)
             X, XT = self._Xmatrix(self.weights)
             vect = X.dot(other.weights)
             return MarginalsGram(self.domain, vect)
@@ -342,12 +335,19 @@ class MarginalsGram(Sum):
         phi = spsolve_triangular(X, z, lower=False)
         return MarginalsGram(self.domain, phi)
 
+    def ginv(self):
+        w = self.weights
+        X, _ = self._Xmatrix(w)
+        idx = X.dot(np.ones(w.size)) != 0
+        X = X[idx,:][:,idx] # to make solve_triangular work
+        phi = spsolve_triangular(X, w[idx], lower=False)
+        phi = spsolve_triangular(X, phi, lower=False)
+        ans = np.zeros(w.size)
+        ans[idx] = phi
+        return MarginalsGram(self.domain, ans)
+
     def pinv(self):
-        Y, _ = self._Xmatrix(self.weights)
-        params = Y.dot(self.weights)
-        X, _ = self._Xmatrix(params)
-        phi = spsolve_triangular(X, self.weights, lower=False)
-        return MarginalsGram(self.domain, phi)
+        return self.ginv()
 
     def trace(self):
         return self.weights.sum() * self.shape[1]
@@ -447,6 +447,24 @@ def RandomRange(shape_list, domain, size, seed=9001):
         queries.append( (lb, ub) )
 
     return RangeQueries.fromlist(domain, queries) 
+
+def Moments(n, k=3):
+    N = np.arange(n)
+    K = np.arange(1,k+1)
+    W = N[None]**K[:,None]
+    return EkteloMatrix(W)
+
+def WidthKRange(n, widths):
+    if type(widths) is int:
+        widths = [widths]
+    m = sum(n-k+1 for k in widths)
+    W = np.zeros((m, n))
+    row = 0
+    for k in widths:
+        for i in range(n-k+1):
+            W[row+i, i:i+k] = 1.0
+        row += n - k + 1
+    return EkteloMatrix(W)
 
 def DimKMarginals(domain, dims):
     if type(dims) is int:
