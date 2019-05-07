@@ -1,10 +1,10 @@
 from ektelo import matrix
-from ektelo.hdmm import utility
 from ektelo.matrix import EkteloMatrix, Identity, Ones, VStack, Kronecker, Sum, Weighted
 import collections
 import functools
 import itertools
 import numpy as np
+from scipy.special import binom
 from scipy import sparse
 from scipy.sparse.linalg import spsolve_triangular
 
@@ -381,7 +381,7 @@ class AllNormK(EkteloMatrix):
         if type(norms) is int:
             norms = [norms]
         self.norms = norms
-        self.m = int(sum(utility.nCr(n, k) for k in norms))
+        self.m = int(sum(binom(n, k) for k in norms))
         self.shape = (self.m, self.n)
         self.dtype = dtype
 
@@ -396,11 +396,11 @@ class AllNormK(EkteloMatrix):
         return Q
 
     def gram(self):
-        # WtW[i,i] = nCr(n-1, k-1) (1 for each query having q[i] = 1)
-        # WtW[i,j] = nCr(n-2, k-2) (1 for each query having q[i] = q[j] = 1)
+        # WtW[i,i] = binom(n-1, k-1) (1 for each query having q[i] = 1)
+        # WtW[i,j] = binom(n-2, k-2) (1 for each query having q[i] = q[j] = 1)
         n = self.n
-        diag = sum(utility.nCr(n-1, k-1) for k in self.norms)
-        off = sum(utility.nCr(n-2, k-2) for k in self.norms)
+        diag = sum(binom(n-1, k-1) for k in self.norms)
+        off = sum(binom(n-2, k-2) for k in self.norms)
         return off*Ones(n,n) + (diag-off)*Identity(n)
 
 class Disjuncts(Sum):
