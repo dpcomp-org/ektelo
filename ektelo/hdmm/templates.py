@@ -1,5 +1,5 @@
 from ektelo import matrix, workload
-from ektelo.hdmm import error
+from ektelo import error
 from functools import reduce
 import numpy as np
 from scipy import optimize

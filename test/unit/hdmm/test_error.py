@@ -1,5 +1,4 @@
-from ektelo import matrix, workload
-from ektelo.hdmm import error
+from ektelo import error, matrix, workload
 import numpy as np
 import unittest
 

@@ -1,4 +1,5 @@
-from ektelo.hdmm import error, mechanism, templates
+from ektelo import error
+from ektelo.hdmm import mechanism, templates
 from ektelo.matrix import EkteloMatrix, Identity, Kronecker, VStack
 from ektelo.workload import AllRange, IdentityTotal, Prefix, Total
 import numpy as np
