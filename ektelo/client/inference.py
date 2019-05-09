@@ -36,6 +36,12 @@ def nnls(A, y, l1_reg=0, l2_reg=0, maxiter = 15000):
     xest[xest < 0] = 0.0
     return xest, info
 
+def wnnls(W, A, y):
+    xhat = lsmr(A, y)[0]
+    yhat = W.dot(xhat)
+
+    return nnls(W, yhat)
+
 def nnl1(A, y):
     M, N = A.shape
     c = cvxopt.matrix(np.append(np.zeros(N), np.ones(M)))
