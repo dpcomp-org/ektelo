@@ -174,9 +174,10 @@ class WorkloadNonNegativeLeastSquares(InferenceOperator):
 
     def infer(self, Ms, ys, scale_factors=None):
         A, y = _apply_scales(Ms, ys, scale_factors)
-        x_ls = lsqr(A, y)[0]
-        x_wnnls, info = nnls(self.W, self.W.dot(x_ls)) 
-        return x_wnnls
+
+        x_est, info = wnnls(self.W, A, y)
+
+        return x_est
 
 class NonNegativeLeastAbsoluteDeviations(InferenceOperator):
     
