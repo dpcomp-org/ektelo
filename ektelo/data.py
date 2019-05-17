@@ -152,6 +152,16 @@ class SubsetNode(DataNode):
         self.idx = idx
 
 
+class Schema:
+
+    def __init__(self, config):
+        self.config = config
+
+    @property
+    def shape(self):
+        return tuple([v['bins'] for k, v in self.config.items()])
+
+
 class RelationHelper(object):
 
     resource_csv_map = {'CPS': 'cps.csv',

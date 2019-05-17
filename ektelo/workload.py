@@ -28,6 +28,47 @@ def IdentityTotal(n, weight=1.0, dtype=np.float64):
     w = dtype(weight)
     return VStack([I, w*T])
 
+class LogicalWorkload:
+
+    def __init__(self):
+        self.attribute_ct = 0
+        self._compiled = False
+        self._nonzeros = None
+        self._predicates = None
+
+    @staticmethod
+    def from_matrix(W, strategy='brute'):
+        W_log = LogicalWorkload()
+        W_log.attribute_ct = W.shape[1]
+        W_log._nonzeros = None
+        W_log._predicates = None
+
+        if strategy == 'brute':
+            W_log._brute_strategy(W)
+        else:
+            raise NotImplementedError(f'unknown strategy: {strategy}')
+
+        W_log._compiled = True
+
+        return W_log
+
+    @property
+    def query_ct(self):
+        assert self._compiled, 'logical workload must be instantiated from factory'
+
+        return len(self._nonzeros)
+
+    def query(self, vec):
+        assert self._compiled, 'logical workload must be instantiated from factory'
+
+        return np.array([predicate(vec) for predicate in self._predicates])
+
+    def _brute_strategy(self, W):
+        self._predicates = np.apply_along_axis(lambda v: lambda x: sum(x[np.nonzero(v)[0]]), axis=1, arr=W.dense_matrix())
+        self._nonzeros = np.nonzero(np.apply_along_axis(lambda x: sum(x) > 0, axis=0, arr=W.dense_matrix()))[0]
+
+        return self
+
 class Prefix(EkteloMatrix):
     """
     The prefix workload encodes range queries of the form [0,k] for 0 <= k <= n-1
