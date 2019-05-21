@@ -161,6 +161,15 @@ class Schema:
     def shape(self):
         return tuple([v['bins'] for k, v in self.config.items()])
 
+    @property
+    def attributes(self):
+        return sorted(list(self.config.keys()))
+
+    def domain(self, field):
+        return self.config[field]['domain']
+
+    def type(self, field):
+        return self.config[field]['type']
 
 class RelationHelper(object):
 
