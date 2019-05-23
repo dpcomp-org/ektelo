@@ -19,8 +19,9 @@ class TestVectorization(unittest.TestCase):
 
         self.schema = data.Schema(config)
         self.R = data.Relation(config).load_csv(filename)
-        self.W_log = workload.RandomLogical(self.schema, 10, 5)
+        self.W_log = workload.RandomLogical(self.schema, 5)
 
     def test_grid(self):
         Dv = vectorization.VectorizationDescription(self.W_log.vectorize(), self.schema)        
         vec = Dv.vectorize(self.R)
+        self.W_log.vectorize() @ vec

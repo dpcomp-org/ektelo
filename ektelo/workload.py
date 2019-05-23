@@ -28,10 +28,9 @@ def IdentityTotal(n, weight=1.0, dtype=np.float64):
     w = dtype(weight)
     return VStack([I, w*T])
 
-def RandomLogical(schema, tuple_ct, size, seed=0):
+def RandomLogical(schema, size, seed=0):
     """
     :param schema: instance of ektelo.data.Schema 
-    :param tuple_ct: number of tuples set to one (actually might be slightly less)
     :param size: number of queries
     :param seed: seed for random number generator
 
@@ -51,11 +50,8 @@ def RandomLogical(schema, tuple_ct, size, seed=0):
 
         return pred_map
 
-    predicates = []
-    for i in range(size):
-        # disjunction of conjunctions (each conjunction is over a tuple of attrs)
-        pred_maps = [rand_pred_map() for j in range(tuple_ct)]
-        predicates.append(lambda x: min(1.0, np.sum([np.product([x[attr] == pmap[attr] for attr in schema.attributes]) for pmap in pred_maps])))
+    pred_maps = [rand_pred_map() for j in range(size)]
+    predicates = {lambda x: np.product([x[attr] == pmap[attr] for attr in schema.attributes]) for pmap in pred_maps}
 
     return LogicalWorkload(schema, predicates)
 
@@ -75,7 +71,7 @@ class LogicalWorkload:
         vecs = []
         for predicate in self.predicates:
             tuples = itertools.product(*[range(self.schema.domain(attr)[0], 
-                                               self.schema.domain(attr)[1]) for attr in self.schema.attributes])
+                                               self.schema.domain(attr)[1]+1) for attr in self.schema.attributes])
             vec = []
             for tup in tuples:
                 row = dict(zip(self.schema.attributes, tup))
