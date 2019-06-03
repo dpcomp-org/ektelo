@@ -8,7 +8,6 @@ from scipy import sparse
 import ektelo
 from ektelo import util
 from ektelo.operators import InferenceOperator
-import cvxopt
 
 def nnls(A, y, l1_reg=0, l2_reg=0, maxiter = 15000):
     """
@@ -41,22 +40,6 @@ def wnnls(W, A, y):
     yhat = W.dot(xhat)
 
     return nnls(W, yhat)
-
-def nnl1(A, y):
-    M, N = A.shape
-    c = cvxopt.matrix(np.append(np.zeros(N), np.ones(M)))
-    h = cvxopt.matrix(np.hstack([y, -y, np.zeros(N)]))
-    A = A.sparse_matrix().tocoo()
-    
-    data = np.hstack([A.data, np.ones(M), -A.data, np.ones(M), np.ones(N)])
-    row = np.hstack([A.row, np.arange(M), M+A.row, np.arange(M, 2*M), np.arange(2*M, 2*M+N)])
-    col = np.hstack([A.col, np.arange(N, N+M), A.col, np.arange(N, N+M), np.arange(N)])
-    shape = (2*M+N, N+M)
-    
-    G = cvxopt.spmatrix(data, row, col, shape)
-    sol = cvxopt.solvers.lp(c, -G, -h)
-    x = np.array(sol['x'])[:N].flatten()
-    return np.maximum(x, 0)
 
 def multWeightsFast(hatx, M, y, updateRounds = 1):
     """ Multiplicative weights update
@@ -178,16 +161,6 @@ class WorkloadNonNegativeLeastSquares(InferenceOperator):
         x_est, info = wnnls(self.W, A, y)
 
         return x_est
-
-class NonNegativeLeastAbsoluteDeviations(InferenceOperator):
-    
-    def __init__(self):
-        super(NonNegativeLeastAbsoluteDeviations, self).__init__()
-    
-    def infer(self, Ms, ys, scale_factors=None):
-        A, y = _apply_scales(Ms, ys, scale_factors)
-        x = nnl1(A, y)
-        return x
 
 class MultiplicativeWeights(InferenceOperator):
     '''

@@ -2,7 +2,6 @@ import numpy as np
 from ektelo.client.inference import LeastSquares
 from ektelo.client.inference import NonNegativeLeastSquares
 from ektelo.client.inference import WorkloadNonNegativeLeastSquares
-from ektelo.client.inference import NonNegativeLeastAbsoluteDeviations
 from ektelo.client.inference import MultiplicativeWeights
 from ektelo.client.inference import AHPThresholding
 from ektelo.client.measurement import laplace_scale_factor
@@ -43,15 +42,6 @@ class TestInference(unittest.TestCase):
         engine = WorkloadNonNegativeLeastSquares(self.A)
         x_est = engine.infer(self.A, ans)
         self.assertEqual(self.X.shape, x_est.shape)
-
-    def test_client_interaction_NL1(self):
-        laplace = Laplace(self.A, self.eps_share)
-        ans = laplace.measure(self.X, self.prng)
-
-        engine = NonNegativeLeastAbsoluteDeviations()
-        x_est = engine.infer(self.A, ans)
-        self.assertEqual(self.X.shape, x_est.shape)
-
 
     def test_client_interaction_MW(self):
         laplace = Laplace(self.A, self.eps_share)
