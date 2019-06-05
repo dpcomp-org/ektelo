@@ -51,7 +51,7 @@ def RandomLogical(schema, size, seed=0):
         return pred_map
 
     pred_maps = [rand_pred_map() for j in range(size)]
-    predicates = {lambda x: np.product([x[attr] == pmap[attr] for attr in schema.attributes]) for pmap in pred_maps}
+    predicates = {lambda x: np.product([x[attr] == pmap[attr] if attr in x else 0 for attr in schema.attributes]) for pmap in pred_maps}
 
     return LogicalWorkload(schema, predicates)
 

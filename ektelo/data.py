@@ -171,6 +171,11 @@ class Schema:
     def type(self, field):
         return self.config[field]['type']
 
+    def subset(self, attributes):
+        config = {attr: values for attr, values in self.config.items() if attr in attributes}
+        
+        return Schema(config)
+
 class RelationHelper(object):
 
     resource_csv_map = {'CPS': 'cps.csv',
