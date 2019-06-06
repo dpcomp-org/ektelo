@@ -311,3 +311,26 @@ class Relation(Marshallable):
         relation_data['value_map'] = self.value_map
 
         return relation_data
+
+    def vectorize(self, schema):
+        attributes = schema.attributes
+
+        for attr in attributes:
+            assert schema.type(attr) == 'discrete'
+
+        attr_dom_map = {attr: schema.domain(attr) for attr in attributes}
+        attr_dsize_map = OrderedDict([(attr, attr_dom_map[attr][1]-attr_dom_map[attr][0]+1) for attr in attributes])
+        vec = np.zeros((np.product(list(attr_dsize_map.values())),1))
+
+        for index, row in self.df.iterrows():
+            idx = 0
+            mult = 1
+            for i in reversed(range(len(attributes))):
+                attr = attributes[i]
+                #idx += int(np.product([dsize for dsize in list(attr_dsize_map.values())[i+1:]]) + row[attr])
+                idx += mult*row[attr]
+                if i > 0:
+                    mult *= attr_dsize_map[attributes[i-1]]
+            vec[idx] += 1
+
+        return vec

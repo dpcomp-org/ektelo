@@ -22,6 +22,6 @@ class TestVectorization(unittest.TestCase):
 
     def test_vectorize_logical(self):
         W_log = workload.RandomLogical(self.schema, 5)
-        Dv = vectorization.VectorizationDescription(W_log.vectorize(), self.schema)        
-        vec = Dv.vectorize(self.R)
+        Dv = vectorization.VectorizationDescription(W_log, self.schema)        
+        vec = self.R.vectorize(self.schema)
         W_log.vectorize() @ vec
