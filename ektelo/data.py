@@ -168,6 +168,9 @@ class Schema:
     def domain(self, field):
         return self.config[field]['domain']
 
+    def bins(self, field):
+        return self.config[field]['bins']
+
     def type(self, field):
         return self.config[field]['type']
 
@@ -312,14 +315,13 @@ class Relation(Marshallable):
 
         return relation_data
 
-    def vectorize(self, schema):
-        attributes = schema.attributes
+    def vectorize(self, Dv):
+        attributes = Dv.schema.attributes
 
         for attr in attributes:
-            assert schema.type(attr) == 'discrete'
+            assert Dv.schema.type(attr) == 'discrete'
 
-        attr_dom_map = {attr: schema.domain(attr) for attr in attributes}
-        attr_dsize_map = OrderedDict([(attr, attr_dom_map[attr][1]-attr_dom_map[attr][0]+1) for attr in attributes])
+        attr_dsize_map = OrderedDict([(attr, len(Dv.edges[i])) for i, attr in enumerate(attributes)])
         vec = np.zeros((np.product(list(attr_dsize_map.values())),1))
 
         for index, row in self.df.iterrows():
@@ -327,8 +329,9 @@ class Relation(Marshallable):
             mult = 1
             for i in reversed(range(len(attributes))):
                 attr = attributes[i]
-                #idx += int(np.product([dsize for dsize in list(attr_dsize_map.values())[i+1:]]) + row[attr])
-                idx += mult*row[attr]
+                import bisect
+                val = bisect.bisect_left(Dv.edges[i], row[attr])
+                idx += mult*val
                 if i > 0:
                     mult *= attr_dsize_map[attributes[i-1]]
             vec[idx] += 1

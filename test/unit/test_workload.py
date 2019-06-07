@@ -1,4 +1,5 @@
 from ektelo import data
+from ektelo import vectorization
 from ektelo import workload
 import numpy as np
 import os
@@ -20,8 +21,9 @@ class TestWorkload(unittest.TestCase):
         config = yaml.load(open(config_file, 'r').read())['stroke_2D_config']
 
         self.schema = data.Schema(config)
+        self.Dv = vectorization.VectorizationDescription(self.schema)
         self.R = data.Relation(config).load_csv(filename)
-        self.W_log = workload.RandomLogical(self.schema, 5)
+        self.W_log = workload.RandomLogical(self.Dv, 5)
 
     def test_incomplete_query(self):
         self.setUp_logical()

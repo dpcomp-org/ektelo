@@ -28,32 +28,41 @@ def IdentityTotal(n, weight=1.0, dtype=np.float64):
     w = dtype(weight)
     return VStack([I, w*T])
 
-def RandomLogical(schema, size, seed=0):
+def RandomLogical(Dv, size, seed=0):
     """
-    :param schema: instance of ektelo.data.Schema 
+    :param Dv: instance of ektelo.vectorization.VectorizationDescription 
     :param size: number of queries
     :param seed: seed for random number generator
 
     :return: LogicalWorkload 
     """
-    for attr in schema.attributes:
-        assert schema.type(attr) == 'discrete'
+    for attr in Dv.schema.attributes:
+        assert Dv.schema.type(attr) == 'discrete'
 
     prng = np.random.RandomState(seed)
 
     def rand_pred_map():
         # random table element
         pred_map = {}
-        for attr in schema.attributes:
-            domain = schema.domain(attr)
-            pred_map[attr] = prng.randint(domain[0], domain[1]+1)
+        for i, attr in enumerate(Dv.schema.attributes):
+            pred_map[attr] = prng.randint(min(Dv.edges[i]), max(Dv.edges[i]))
 
         return pred_map
 
-    pred_maps = [rand_pred_map() for j in range(size)]
-    predicates = {lambda x: np.product([x[attr] == pmap[attr] if attr in x else 0 for attr in schema.attributes]) for pmap in pred_maps}
+    def form_predicate(x, pmap):
+        attr_comps = []
+        for attr in Dv.schema.attributes:
+            if attr not in x:
+                continue
 
-    return LogicalWorkload(schema, predicates)
+            attr_comps.append(x[attr] == pmap[attr]) 
+
+        return np.product(attr_comps)
+
+    pred_maps = [rand_pred_map() for j in range(size)]
+    predicates = {lambda x: form_predicate(x, pmap) for pmap in pred_maps}
+
+    return LogicalWorkload(Dv.schema, predicates)
 
 class LogicalWorkload:
 
@@ -61,17 +70,18 @@ class LogicalWorkload:
         self.schema = schema
         self.predicates = predicates
 
-    def vectorize(self, strategy='brute'):
+    def vectorize(self, Dv, strategy='brute'):
         if strategy == 'brute':
-            return self._vectorize_brute()
+            return self._vectorize_brute(Dv)
         else:
             raise NotImplementedError(f'unknown strategy: {strategy}')
 
-    def _vectorize_brute(self):
+    def _vectorize_brute(self, Dv):
+        attributes = Dv.schema.attributes
         vecs = []
         for predicate in self.predicates:
-            tuples = itertools.product(*[range(self.schema.domain(attr)[0], 
-                                               self.schema.domain(attr)[1]+1) for attr in self.schema.attributes])
+            shape = [len(Dv.edges[i]) for i in range(len(attributes))]
+            tuples = itertools.product(*[range(0,cell_ct) for cell_ct in shape])
             vec = []
             for tup in tuples:
                 row = dict(zip(self.schema.attributes, tup))

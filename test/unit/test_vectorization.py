@@ -21,7 +21,18 @@ class TestVectorization(unittest.TestCase):
         self.R = data.Relation(config).load_csv(filename)
 
     def test_vectorize_logical(self):
-        W_log = workload.RandomLogical(self.schema, 5)
-        Dv = vectorization.VectorizationDescription(W_log, self.schema)        
-        vec = self.R.vectorize(self.schema)
-        W_log.vectorize() @ vec
+        Dv = vectorization.VectorizationDescription(self.schema)        
+        W_log = workload.RandomLogical(Dv, 5)
+        vec = self.R.vectorize(Dv)
+        W_vec = W_log.vectorize(Dv)
+        W_vec @ vec
+
+    def test_partitioning(self):
+        histogram = data.Histogram(self.R.df, 
+                                   [self.schema.bins(attr) for attr in self.schema.attributes], 
+                                   [self.schema.domain(attr) for attr in self.schema.attributes], 
+                                   False, 
+                                   None).generate()
+        Dv = vectorization.VectorizationDescription(self.schema, edges=histogram.edges)        
+        W_log = workload.RandomLogical(Dv, 5)
+        W_log.vectorize(Dv)
