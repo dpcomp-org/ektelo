@@ -53,6 +53,32 @@ def partition_grid(domain_shape, grid_shape, canonical_order=False):
 
     return partition_array
 
+
+def partition_grid_cells(domain_shape, reduced_domain_shape):
+    q = [divmod(dom,grid) for (dom,grid) in zip(domain_shape, reduced_domain_shape)]
+
+    for red, rem in q:
+        assert rem == 0, 'Domain must be reducible to target domain by uniform grid: %i, %i' % (red,rem)
+
+    return [r[0] for r in q]
+
+
+def consolidate_partition_grid(partition_array, edges):
+    groups = np.unique(partition_array)
+
+    edge_sets = [set([edges[i][0]]) for i in range(len(edges))]
+    for group in groups:
+        idx_list = np.where(partition_array == group)
+        for i, idxs in enumerate(idx_list):
+            edge_sets[i].add(edges[i][max(idxs)])
+
+    new_edges = []
+    for i in range(len(edges)):
+        new_edges.append(sorted(edge_sets[i]))
+
+    return new_edges
+
+
 def cells_to_mapping(cells, domain):
 
     n,m = domain

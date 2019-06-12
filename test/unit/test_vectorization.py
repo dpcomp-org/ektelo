@@ -1,6 +1,9 @@
 from ektelo import data
 from ektelo import vectorization
 from ektelo import workload
+from ektelo.client.mapper import partition_grid
+from ektelo.client.mapper import partition_grid_cells
+from ektelo.client.mapper import consolidate_partition_grid
 import numpy as np
 import os
 import unittest
@@ -34,5 +37,20 @@ class TestVectorization(unittest.TestCase):
                                    False, 
                                    None).generate()
         Dv = vectorization.VectorizationDescription(self.schema, edges=histogram.edges)        
+        W_log = workload.RandomLogical(Dv, 5)
+        W_log.vectorize(Dv)
+
+    def test_partition_grid(self):
+        histogram = data.Histogram(self.R.df, 
+                                   [self.schema.bins(attr) for attr in self.schema.attributes], 
+                                   [self.schema.domain(attr) for attr in self.schema.attributes], 
+                                   False, 
+                                   None).generate()
+        domain_shape = [len(e) for e in histogram.edges]
+        reduced_domain_shape = (5, 5)
+        partition_array = partition_grid(domain_shape, 
+                                         partition_grid_cells(domain_shape, reduced_domain_shape))
+        edges = consolidate_partition_grid(partition_array, histogram.edges)
+        Dv = vectorization.VectorizationDescription(self.schema, edges=edges)        
         W_log = workload.RandomLogical(Dv, 5)
         W_log.vectorize(Dv)
