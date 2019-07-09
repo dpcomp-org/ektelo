@@ -28,3 +28,7 @@ class TestWorkload(unittest.TestCase):
     def test_incomplete_query(self):
         self.setUp_logical()
         test_query = list(self.W_log.predicates)[0]({'age': 10})
+
+    def test_relation_query(self):
+        self.setUp_logical()
+        result = self.R.query(list(self.W_log.predicates)[0])

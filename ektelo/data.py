@@ -337,3 +337,6 @@ class Relation(Marshallable):
             vec[idx] += 1
 
         return vec
+
+    def query(self, predicate):
+        return [predicate(row) for idx, row in self._df.iterrows()]
