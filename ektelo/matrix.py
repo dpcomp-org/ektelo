@@ -1,7 +1,7 @@
 from ektelo import util
 import numpy as np
 from scipy import sparse
-from scipy.sparse.linalg import LinearOperator, aslinearoperator, lsqr
+from scipy.sparse.linalg import LinearOperator
 from functools import reduce
 import math
 
@@ -104,10 +104,10 @@ class EkteloMatrix(LinearOperator):
         :return: a 1xN EkteloMatrix
         """
         # row indexing, subclasses may provide more efficient implementation
-        m = self.shape[0]
+        m, n = self.shape
         v = np.zeros(m)
         v[key] = 1.0
-        return EkteloMatrix(self.T.dot(v).reshape(1, self.shape[1]))
+        return EkteloMatrix(self.T.dot(v).reshape(1, n))
     
     def dense_matrix(self):
         """
@@ -223,6 +223,11 @@ class Weighted(EkteloMatrix):
     def _matmat(self, V):
         return self.weight * self.base.dot(V)
     
+    def __mul__(self, other):
+        if isinstance(other,EkteloMatrix):
+            return Weighted(self.base @ other, self.weight)
+        return EkteloMatrix.__mul__(self, other)
+
     def _transpose(self):
         return Weighted(self.base.T, self.weight)
     
@@ -243,6 +248,9 @@ class Weighted(EkteloMatrix):
         
     def __sqr__(self):
         return Weighted(self.base.__sqr__(), self.weight**2)
+
+    def sensitivity(self):
+        return self.weight * self.base.sensitivity()
     
     @property
     def matrix(self):
@@ -270,11 +278,31 @@ class Sum(EkteloMatrix):
     def diag(self):
         return sum(Q.diag() for Q in self.matrices)
 
+    def trace(self):
+        return sum(Q.trace() for Q in self.matrices)
+
     @property
     def matrix(self):
         if _any_sparse(self.matrices):
             return sum(Q.sparse_matrix() for Q in self.matrices)
         return sum(Q.dense_matrix() for Q in self.matrices)
+
+class BlockDiag(EkteloMatrix):
+    def __init__(self, matrices):
+        self.matrices = matrices
+        rows = sum(Q.shape[0] for Q in matrices)
+        cols = sum(Q.shape[1] for Q in matrices)
+        self.shape = (rows, cols)
+        self.dtype = np.result_type(*[Q.dtype for Q in matrices])
+
+    # TODO: implement _matmat
+
+    def diag(self):
+        return np.concatenate([Q.diag() for Q in self.matrices])
+
+    @property
+    def matrix(self):
+        return sparse.block_diag([Q.matrix for Q in self.matrices], format='csr')
 
 class VStack(EkteloMatrix):
     def __init__(self, matrices):
@@ -314,6 +342,10 @@ class VStack(EkteloMatrix):
     def __abs__(self):
         return VStack([Q.__abs__() for Q in self.matrices])
 
+    def __sqr__(self):
+        return VStack([Q.__sqr__() for Q in self.matrices])
+
+
 class HStack(EkteloMatrix):
     def __init__(self, matrices):
         # all matrices must have same number of rows
@@ -328,7 +360,10 @@ class HStack(EkteloMatrix):
 
     def _matmat(self, V):
         vs = np.split(V, self.split)
-        return sum([Q.dot(z) for Q, z in zip(self.matrices, vs)])
+        ans = np.zeros((self.shape[0], V.shape[1]), dtype=self.dtype)
+        for Q,z in zip(self.matrices, vs):
+            ans += Q.dot(z)
+        return ans
     
     def _transpose(self):
         return VStack([Q.T for Q in self.matrices])
@@ -351,8 +386,17 @@ class HStack(EkteloMatrix):
             return Sum([A @ B for A,B in zip(self.matrices, other.matrices)])
         return EkteloMatrix.__mul__(self, other)
 
+    def __rmul__(self, other):
+        if isinstance(other, EkteloMatrix):
+            return HStack([other @ Q for Q in self.matrices])
+        return EkteloMatrix.__mul__(self, other)
+
     def __abs__(self):
         return HStack([Q.__abs__() for Q in self.matrices])
+
+    def __sqr__(self):
+        return HStack([Q.__sqr__() for Q in self.matrices])
+
 
 class Kronecker(EkteloMatrix):
     def __init__(self, matrices):

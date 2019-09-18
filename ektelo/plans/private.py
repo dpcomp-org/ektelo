@@ -448,7 +448,10 @@ class StripedHB(Base):
             M_bar = hb((P_i.shape[0],)) 
             y_i = x_i.laplace(M_bar, eps)
 
-            M_i = M_bar * P_i
+            # TODO: Ideally this would be just M_bar * P_i
+            # but currently that returns an int type matrix
+            # because the type of P_i is int
+            M_i = (P_i.T * M_bar.T).T
 
             Ms.append(M_i)
             ys.append(y_i)
@@ -657,7 +660,10 @@ class HDMarginalsSmart(Base):
                 # expand the dawa reduction
                 M_i = M_bar * support.reduction_matrix(mapping)
 
-            MM = M_i * support.reduction_matrix(marginal_mapping)
+            # TODO: Ideally this would be just M_i * support.reduction_matrix(marginal_mapping)
+            # but currently that returns an int type matrix
+            # because the type of P_i is int
+            MM = (support.reduction_matrix(marginal_mapping).T * M_i.T).T
             Ms.append(MM)
             ys.append(y_i)
             scale_factors.append(noise_scale_factor)
