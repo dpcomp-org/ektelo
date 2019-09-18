@@ -1,7 +1,7 @@
 from ektelo import matrix
-from ektelo.matrix import EkteloMatrix, Identity, Ones, VStack, Kronecker, Sum, Weighted
+from ektelo.matrix import EkteloMatrix, Identity, Ones, VStack, Kronecker, Product, Sum, Weighted
 import collections
-import functools
+from functools import reduce
 import itertools
 import numpy as np
 from scipy.special import binom
@@ -112,7 +112,7 @@ class AllRange(EkteloMatrix):
         X = np.outer(r, r[::-1])
         return EkteloMatrix(np.minimum(X, X.T))
 
-class RangeQueries(matrix.Product):
+class RangeQueries(Product):
     """
     This class can represent a workload of range queries, which are provided as input
     to the constructor.
@@ -162,7 +162,7 @@ class RangeQueries(matrix.Product):
 
         P = Kronecker([Prefix(n, dtype) for n in domain])
         T = EkteloMatrix(self._transformer)
-        matrix.Product.__init__(self, T, P)
+        Product.__init__(self, T, P)
 
     @staticmethod
     def fromlist(domain, ranges, dtype=np.float64):
@@ -196,15 +196,32 @@ class RangeQueries(matrix.Product):
     def unproject(self, offset, domain):
         return RangeQueries(domain, self._lower+np.array(offset), self._higher+np.array(offset))
 
+class Permuted(EkteloMatrix):
+    def __init__(self, base, seed=0):
+        self.base = base
+        prng = np.random.RandomState(seed)
+        self.idx = prng.permutation(base.shape[1])
+        self.shape = base.shape
+        self.dtype = base.dtype
+
+    @property
+    def matrix(self):
+        return self.base.dense_matrix()[:,self.idx]
+   
+    def gram(self):
+        WtW = self.base.gram().dense_matrix()
+        return EkteloMatrix(WtW[self.idx,:][:,self.idx])
+
 class Marginal(Kronecker):
     def __init__(self, domain, key):
         """
         :param domain: a d-tuple containing the domain size of the d attributes
         :param key: a integer key 0 <= key < 2^d identifying the marginal
         """
-        self.domain = domain
+        self.domain = tuple(domain)
         self.key = key
         binary = self.binary()
+        self._axes = tuple(i for i in range(len(binary)) if binary[i] == 0)
         subs = []
         for i,n in enumerate(domain):
             if binary[i] == 0:
@@ -212,6 +229,21 @@ class Marginal(Kronecker):
             else:
                 subs.append(Identity(n))
         Kronecker.__init__(self, subs)
+
+    def _matmat(self, V):
+        tensor = V.reshape(*self.domain, V.shape[1])
+        return tensor.sum(axis=self._axes).reshape(-1, V.shape[1])
+
+    def _rmatmat(self, V):  
+        newdom = tuple(self.domain[i] if i in self.tuple() else 1 for i in range(len(self.domain)))
+        tensor = V.reshape(*newdom, V.shape[1])
+        ans = np.broadcast_to(tensor, self.domain + (V.shape[1],))
+        return ans.reshape(-1, V.shape[1])
+
+    def _transpose(self):
+        ans = Kronecker._transpose(self)
+        ans._matmat = self._rmatmat
+        return ans
 
     def binary(self):
         i = self.key
@@ -230,8 +262,11 @@ class Marginal(Kronecker):
         return Marginal(domain, key)
 
     @staticmethod
-    def fromtuple(domain, attrs):
-        binary = [1 if i in attrs else 0 for i in range(len(domain))]
+    def fromtuple(domain, attrs, columns=None):
+        if not columns:
+            binary = [1 if i in attrs else 0 for i in range(len(domain))]
+        else:
+            binary = [1 if i in attrs else 0 for i in columns]
         return Marginal.frombinary(domain, binary)
 
 class Marginals(VStack):
@@ -247,8 +282,11 @@ class Marginals(VStack):
         return MarginalsGram(self.domain, self.weights**2)
    
     def pinv(self):
-        # note: this is a generalized inverse, not necessarily the pseudo inverse though
+        # note: this is a generalized inverse, but not necessarily the pseudo inverse
         return self.gram().pinv() * self.T
+
+    def sensitivity(self):
+        return self.weights.sum()
 
     @staticmethod 
     def frombinary(domain, weights):
@@ -259,10 +297,10 @@ class Marginals(VStack):
         return Marginals(domain, vect)
 
     @staticmethod
-    def fromtuples(domain, weights):
+    def fromtuples(domain, weights, columns=None):
         vect = np.zeros(2**len(domain))
         for tpl, wgt in weights.items():
-            M = Marginal.fromtuple(domain, tpl)
+            M = Marginal.fromtuple(domain, tpl, columns)
             vect[M.key] = wgt
         return Marginals(domain, vect)
    
@@ -292,6 +330,19 @@ class MarginalsGram(Sum):
         self._mult = mult
 
         Sum.__init__(self, subs)
+
+    def _matmat(self, V):
+        tensor = V.reshape(*self.domain, V.shape[1])
+        ans = self.weights[-1] * tensor
+        d = len(self.domain)
+        for key in range(2**d-1):
+            binary = tuple([int(bool(2**k & key)) for k in range(d)])[::-1]
+            axes = tuple(i for i in range(len(binary)) if binary[i] == 0)
+            if self.weights[key] != 0:
+                tmp = tensor.sum(axis=axes, keepdims=True)
+                tmp *= self.weights[key]
+                ans += tmp
+        return ans.reshape(-1, V.shape[1])
 
     def _Xmatrix(self,vect):
         # the matrix X such that M(u) M(v) = M(X(u) v)
@@ -367,7 +418,7 @@ class MarginalsGram(Sum):
                 b = float(X.sum() - X.trace()) / (n * (n-1))
                 a = float(X.trace()) / n - b
                 tmp.append(np.array([b,a]))
-            weights += sub.weight * functools.reduce(np.kron, tmp)
+            weights += sub.weight * reduce(np.kron, tmp)
         return MarginalsGram(dom, weights)
  
 class AllNormK(EkteloMatrix):
@@ -424,11 +475,31 @@ class Disjuncts(Sum):
 class ExplicitGram:
     # not an Ektelo Matrix, but behaves like it in the sense that it has gram function,
     # meaning strategy optimization is possible
-    def __init__(self, matrix):
+    def __init__(self, matrix, queries=None):
         self.matrix = matrix
+        self.shape = (queries, matrix.shape[1])
+        self.dtype = matrix.dtype
     
     def gram(self):
         return EkteloMatrix(self.matrix)
+
+def Moments(n, k=3):
+    N = np.arange(n)
+    K = np.arange(1,k+1)
+    W = N[None]**K[:,None]
+    return EkteloMatrix(W)
+ 
+def WidthKRange(n, widths):
+    if type(widths) is int:
+        widths = [widths]
+    m = sum(n-k+1 for k in widths)
+    W = np.zeros((m, n))
+    row = 0
+    for k in widths:
+        for i in range(n-k+1):
+            W[row+i, i:i+k] = 1.0
+        row += n - k + 1
+    return EkteloMatrix(W)
 
 def RandomRange(shape_list, domain, size, seed=9001):
     if type(domain) is int:
@@ -448,24 +519,6 @@ def RandomRange(shape_list, domain, size, seed=9001):
 
     return RangeQueries.fromlist(domain, queries) 
 
-def Moments(n, k=3):
-    N = np.arange(n)
-    K = np.arange(1,k+1)
-    W = N[None]**K[:,None]
-    return EkteloMatrix(W)
-
-def WidthKRange(n, widths):
-    if type(widths) is int:
-        widths = [widths]
-    m = sum(n-k+1 for k in widths)
-    W = np.zeros((m, n))
-    row = 0
-    for k in widths:
-        for i in range(n-k+1):
-            W[row+i, i:i+k] = 1.0
-        row += n - k + 1
-    return EkteloMatrix(W)
-
 def DimKMarginals(domain, dims):
     if type(dims) is int:
         dims = [dims]
@@ -480,6 +533,19 @@ def Range2D(n):
 
 def Prefix2D(n):
     return Kronecker([Prefix(n), Prefix(n)]) 
+
+def union_kron_canonical(W):
+    if isinstance(W, Kronecker):
+        return VStack([1.0 * W])
+    elif isinstance(W, Weighted) and isinstance(W.base, Kronecker):
+        return VStack([W])
+    elif isinstance(W, VStack):
+        return VStack([1.0 * X for X in W.matrices])
+    elif isinstance(W, Weighted) and isinstance(W.base, VStack):
+        c = W.weight
+        return VStack([c * X for X in W.base.matrices])
+    else:
+        raise ValueError('Input format not recognized')
 
 def sum_kron_canonical(WtW):
     if isinstance(WtW, Kronecker):
