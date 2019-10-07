@@ -66,11 +66,13 @@ for third-party python modules installed during initialization. The
 dependencies vary by platform. It is **strongly recommended** to use
 python version 3.6 or higher.
 
-#### Ubuntu 16.04 Packages
+#### Ubuntu 18.04 Packages
 
 ```bash
-sudo apt-get install gfortran liblapack-dev libblas-dev
-sudo apt-get install libpq-dev python3-dev libncurses5-dev swig glpk
+sudo apt-get update
+sudo apt-get install --reinstall build-essential
+sudo apt-get install gfortran liblapack-dev libblas-dev python3-venv
+sudo apt-get install libpq-dev python3-dev libncurses5-dev swig glpk-utils
 ```
 
 #### OSX packages
