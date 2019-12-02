@@ -62,6 +62,8 @@ class PrivateManager(object):
     def measure(self, node, operator, eps):
         assert util.contains_superclass(operator.__class__, 'MeasurementOperator')
 
+        assert operator.eps <= eps, "operator budget cannot exceed measurement budget"
+
         self._request(node, eps)
         X = self._materialize_X(node)
 
